@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Lack of Access to Healthcare — Awareness Project</title>
+  <meta name="description" content="A small responsive single-file website project about lack of access to healthcare in underserved communities. Includes sections for causes, stats, solutions, resources and contact." />
+
+  <!-- Top-notch CSS: modern, responsive, accessible -->
+  <style>
+    :root{
+      --bg:#0f1724; /* dark navy */
+      --card:#0b1220;
+      --muted:#9aa6b2;
+      --accent:#06b6d4; /* teal */
+      --accent-2:#7c3aed; /* purple */
+      --glass: rgba(255,255,255,0.03);
+      --radius:14px;
+      --max-width:1100px;
+      --gap:1.25rem;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      color-scheme: dark;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      background:linear-gradient(180deg,var(--bg),#071024 120%);
+      color:#e6eef6;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      line-height:1.45;
+      padding:2rem 1rem;
+      display:flex;
+      justify-content:center;
+      font-size:16px;
+    }
+    .wrap{width:100%;max-width:var(--max-width);}
+
+    /* Header */
+    header{
+      display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1.25rem;
+    }
+    .brand{display:flex;gap:.75rem;align-items:center}
+    .logo{
+      width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      display:grid;place-items:center;font-weight:700;color:#021123;box-shadow:0 6px 20px rgba(12,20,30,0.6);
+    }
+    nav{display:flex;gap:1rem;align-items:center}
+    nav a{color:var(--muted);text-decoration:none;padding:.5rem .65rem;border-radius:10px}
+    nav a:hover{color:var(--accent);background:rgba(255,255,255,0.02)}
+
+    /* Hero */
+    .hero{
+      background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+      border-radius:var(--radius);padding:1.6rem;display:grid;grid-template-columns:1fr 360px;gap:1.25rem;align-items:center;box-shadow:0 10px 40px rgba(2,6,23,0.6);
+    }
+    .kicker{font-size:.9rem;color:var(--accent);font-weight:600;letter-spacing:.6px}
+    h1{margin:.35rem 0;font-size:1.6rem}
+    p.lead{color:var(--muted);margin:0 0 1rem}
+    .cta-row{display:flex;gap:.75rem}
+    .btn{background:linear-gradient(90deg,var(--accent),var(--accent-2));border:none;padding:.65rem 1rem;border-radius:12px;color:#021123;font-weight:700;cursor:pointer}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted)}
+
+    /* Stats card */
+    .stats{display:grid;grid-auto-rows:1fr;gap:.75rem}
+    .card{background:linear-gradient(180deg,var(--card),var(--glass));padding:1rem;border-radius:12px}
+    .stat-num{font-weight:800;font-size:1.25rem}
+    .stat-label{color:var(--muted);font-size:.9rem}
+
+    /* Main grid */
+    main{margin-top:1.25rem;display:grid;grid-template-columns:1fr 360px;gap:var(--gap);align-items:start}
+
+    /* Content modules */
+    .module{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:1rem;border-radius:12px}
+    h2{margin-top:0}
+    .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:.9rem}
+
+    /* Resource cards */
+    .resource{display:flex;gap:.75rem;align-items:flex-start}
+    .resource img{width:64px;height:48px;object-fit:cover;border-radius:8px}
+    .pill{display:inline-block;padding:.2rem .5rem;border-radius:999px;background:rgba(255,255,255,0.03);color:var(--muted);font-size:.78rem}
+
+    /* Tabs for deeper pages */
+    .tabs{display:flex;gap:.5rem;margin-bottom:.75rem}
+    .tab{padding:.45rem .65rem;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.03);cursor:pointer;color:var(--muted)}
+    .tab.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#021123}
+
+    /* Contact form */
+    form{display:grid;gap:.6rem}
+    label{font-size:.85rem;color:var(--muted)}
+    input,textarea,select{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:.6rem;border-radius:10px;color:inherit}
+    textarea{min-height:120px}
+
+    /* Footer */
+    footer{margin-top:1.25rem;padding:1rem;text-align:center;color:var(--muted);font-size:.9rem}
+
+    /* Responsive */
+    @media (max-width:980px){
+      .hero,main{grid-template-columns:1fr}
+      nav{display:none}
+    }
+    @media (max-width:480px){
+      body{padding:1rem}
+      h1{font-size:1.35rem}
+    }
+
+    /* small utility */
+    .muted{color:var(--muted)}
+    .small{font-size:.85rem}
+
+    /* subtle entrance animation */
+    .fade-in{animation:fadeUp .7s ease both}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="fade-in" role="banner">
+      <div class="brand">
+        <div class="logo" aria-hidden>HC</div>
+        <div>
+          <div style="font-weight:700">Healthcare Access</div>
+          <div class="small muted">Underserved communities awareness</div>
+        </div>
+      </div>
+      <nav role="navigation" aria-label="Main navigation">
+        <a href="#about">About</a>
+        <a href="#causes">Causes</a>
+        <a href="#solutions">Solutions</a>
+        <a href="#resources">Resources</a>
+      </nav>
+    </header>
+
+    <section class="hero fade-in" aria-labelledby="hero-title">
+      <div>
+        <div class="kicker">Community Health — Awareness Project</div>
+        <h1 id="hero-title">Why lack of access to healthcare persists in underserved communities</h1>
+        <p class="lead">Short summary: Millions of people face barriers to primary care, maternal health, diagnostics and emergency services due to distance, cost, workforce shortages and systemic inequalities. This micro-site explains causes, shares data, and suggests practical grassroots solutions.</p>
+        <div class="cta-row">
+          <button class="btn" onclick="document.getElementById('solutions').scrollIntoView({behavior:'smooth'})">Explore Solutions</button>
+          <button class="btn ghost" onclick="document.getElementById('resources').scrollIntoView({behavior:'smooth'})">View Resources</button>
+        </div>
+      </div>
+
+      <aside class="stats">
+        <div class="card">
+          <div class="stat-num">~2.5B</div>
+          <div class="stat-label">people worldwide with limited access to essential health services</div>
+        </div>
+        <div class="card">
+          <div class="stat-num">Distance & Costs</div>
+          <div class="stat-label">Geography + affordability are top barriers</div>
+        </div>
+        <div class="card">
+          <div class="stat-num">Primary Care Shortage</div>
+          <div class="stat-label">Provider distribution heavily urban-centered</div>
+        </div>
+      </aside>
+    </section>
+
+    <main>
+      <section class="module fade-in" id="about">
+        <h2>About the problem</h2>
+        <p class="muted">Access to healthcare is influenced by multiple factors — socioeconomic, geographic, infrastructural and political. Underserved communities may be rural catchments, urban informal settlements, migrant groups, or populations facing discrimination (language, cultural, or legal barriers).</p>
+
+        <div class="grid-2" style="margin-top:1rem">
+          <div>
+            <h3>Barriers</h3>
+            <ul class="muted">
+              <li>Long distances to clinics and hospitals</li>
+              <li>Out-of-pocket costs and lack of insurance</li>
+              <li>Shortage of trained health workers</li>
+              <li>Cultural & language barriers</li>
+              <li>Poor infrastructure (roads, electricity, cold chain)</li>
+            </ul>
+          </div>
+          <div>
+            <h3>Consequences</h3>
+            <ul class="muted">
+              <li>Higher maternal and child mortality</li>
+              <li>Delays in diagnosis and treatment</li>
+              <li>Higher burden of preventable disease</li>
+              <li>Economic losses for families</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <aside style="display:flex;flex-direction:column;gap:.9rem">
+        <div class="card fade-in" role="region" aria-label="Quick facts">
+          <strong>Quick facts</strong>
+          <p class="small muted" style="margin-top:.5rem">Use these talking points in presentations or posters. This content is intentionally concise and shareable.</p>
+        </div>
+
+        <div class="card fade-in" role="region" aria-label="Get involved">
+          <strong>Get involved</strong>
+          <p class="small muted">Volunteer mobile clinic days, support telehealth hubs, advocate for rural workforce incentives, donate to vetted local health NGOs.</p>
+        </div>
+      </aside>
+    </main>
+
+    <section class="module fade-in" id="causes" style="margin-top:var(--gap)">
+      <h2>Causes & structural drivers</h2>
+      <div class="tabs" role="tablist" aria-label="Causes tabs">
+        <button class="tab active" data-tab="1">Geography</button>
+        <button class="tab" data-tab="2">Economics</button>
+        <button class="tab" data-tab="3">Workforce</button>
+      </div>
+
+      <div id="tab-1" class="tab-panel">
+        <p class="muted">Rural communities often face long travel times and lack public transport. Seasonal weather can block access entirely.</p>
+      </div>
+      <div id="tab-2" class="tab-panel" hidden>
+        <p class="muted">Out-of-pocket spending, no insurance, and indirect costs (lost wages, transport) make care unaffordable for many families.</p>
+      </div>
+      <div id="tab-3" class="tab-panel" hidden>
+        <p class="muted">Clinicians concentrate in cities; rural clinics are understaffed, causing closures and burnout among those who remain.</p>
+      </div>
+    </section>
+
+    <section class="module fade-in" id="solutions" style="margin-top:var(--gap)">
+      <h2>Practical & scalable solutions</h2>
+      <ul class="muted">
+        <li><strong>Mobile clinics:</strong> bring primary care and screening to remote villages.</li>
+        <li><strong>Task shifting:</strong> train community health workers to deliver essential services.</li>
+        <li><strong>Telehealth hubs:</strong> connect community sites with urban specialists.</li>
+        <li><strong>Community financing:</strong> microinsurance, vouchers or transport subsidies.</li>
+        <li><strong>Infrastructure:</strong> invest in roads, electric supply and cold chain for vaccines.</li>
+      </ul>
+
+      <div style="margin-top:1rem" class="grid-2">
+        <div class="card">
+          <h3>Community-led example</h3>
+          <p class="muted">A village-run clinic with part-time visiting doctors and trained community nurses reduced emergency referrals by 40% in 2 years (example model).</p>
+        </div>
+        <div class="card">
+          <h3>Policy levers</h3>
+          <p class="muted">Subsidies for rural postings, telemedicine reimbursement, and targeted training scholarships create long-term change.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="module fade-in" id="resources" style="margin-top:var(--gap)">
+      <h2>Resources</h2>
+      <div class="resource" style="margin-top:.6rem">
+        <div style="width:64px;height:48px;background:linear-gradient(90deg,var(--accent),var(--accent-2));border-radius:8px;display:grid;place-items:center;font-weight:700;color:#021123">NGO</div>
+        <div>
+          <div style="font-weight:700">Local NGO playbook<br><span class="small muted">Contact: +91-9876543210 (Editable)</span></div>
+          <div class="muted small">A starter kit: needs assessment, volunteer training, monitoring templates. <br><span class="pill">Update number anytime</span></div>
+        </div>
+      </div>
+
+      <div class="resource" style="margin-top:.6rem">
+        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='80'><rect rx='8' width='120' height='80' fill='%230b1220'/><text x='12' y='45' fill='%23b6dbe3' font-family='Arial' font-size='12'>Telehealth</text></svg>" alt="telehealth" />
+        <div>
+          <div style="font-weight:700">Telehealth setup guide</div>
+          <div class="muted small">Low-bandwidth approaches, privacy basics, and equipment checklists.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="module fade-in" id="contact" style="margin-top:var(--gap)">
+      <h2>Contact / Share Local Data</h2>
+      <p class="muted">If you work in an underserved area and want to share lessons or request a collaboration, send a short note below.</p>
+      <form onsubmit="event.preventDefault(); alert('Thanks — this demo form does not send data. Replace with your backend endpoint.');">
+        <label for="name">Name</label>
+        <input id="name" name="name" placeholder="Your name" required />
+        <label for="email">Email</label>
+        <input id="email" name="email" placeholder="you@example.org" type="email" required />
+        <label for="message">Message</label>
+        <textarea id="message" name="message" placeholder="Short note about your project or needs"></textarea>
+        <div style="display:flex;gap:.6rem">
+          <button class="btn" type="submit">Send</button>
+          <button class="btn ghost" type="reset">Reset</button>
+        </div>
+      </form>
+    </section>
+
+    <footer class="fade-in">
+      <div class="small muted">This is a demo project for awareness and educational use. Replace placeholder facts with verified sources and contact mechanisms before public use.</div>
+    </footer>
+
+  </div>
+
+  <script>
+    // Tab interactivity (accessible) — small, dependency-free
+    (function(){
+      const tabs = document.querySelectorAll('.tab');
+      tabs.forEach(t => t.addEventListener('click', ()=>{
+        tabs.forEach(x=>x.classList.remove('active'));
+        t.classList.add('active');
+        const id = t.getAttribute('data-tab');
+        document.querySelectorAll('.tab-panel').forEach(p=>p.hidden=true);
+        const selected = document.getElementById('tab-'+id);
+        if(selected) selected.hidden=false;
+      }));
+
+      // Simple nav toggle for smaller screens (progressive enhancement)
+      // If you want a hamburger menu, implement here.
+
+    })();
+  </script>
+</body>
+</html>
