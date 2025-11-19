@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SDRS — Smart Disaster Response (Prototype)</title>
+<meta name="description" content="Futuristic disaster management prototype with SOS, map, hospitals, NGOs, animated markers." />
+<style>
+  /* ===========================
+     Reset + Base
+     =========================== */
+  :root{
+    --bg:#040616;
+    --panel: rgba(255,255,255,0.03);
+    --glass-border: rgba(255,255,255,0.06);
+    --muted: rgba(230,245,242,0.78);
+    --accent1: #33f0d7;
+    --accent2: #8d6bff;
+    --danger: #ff3b30;
+    --card-radius: 14px;
+    --shadow: 0 12px 40px rgba(0,0,0,0.7);
+    --glass: rgba(255,255,255,0.02);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;color:#dffdf9;background:
+    radial-gradient(1000px 600px at 10% 10%, rgba(13,21,46,0.6), transparent 12%),
+    radial-gradient(800px 500px at 90% 90%, rgba(16,9,28,0.6), transparent 12%),
+    var(--bg);
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;}
+  a{color:inherit}
+  button{font-family:inherit}
+
+  /* ===========================
+     Layout
+     =========================== */
+  .wrap{max-width:1200px;margin:28px auto;padding:18px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .logo{
+    width:64px;height:64px;border-radius:12px;
+    background:conic-gradient(from 200deg,var(--accent1),var(--accent2));
+    display:grid;place-items:center;box-shadow:0 10px 40px rgba(75,0,130,0.12);
+  }
+  .title h1{margin:0;font-size:18px;letter-spacing:0.6px}
+  .title p{margin:0;font-size:13px;color:var(--muted)}
+
+  .top-controls{display:flex;gap:10px;align-items:center}
+  .chip{padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.02);border:1px solid var(--glass-border);font-weight:700}
+  .btn{padding:10px 14px;border-radius:10px;border:1px solid var(--glass-border);background:transparent;color:var(--muted);cursor:pointer;font-weight:700}
+  .btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#041216;border:none;box-shadow:0 10px 30px rgba(109,78,255,0.06)}
+
+  /* ===========================
+     Main grid
+     =========================== */
+  .main{display:grid;grid-template-columns:1fr 360px;gap:18px;align-items:start}
+  @media (max-width:1000px){.main{grid-template-columns:1fr}}
+
+  /* ===========================
+     Map card
+     =========================== */
+  .card{background:var(--panel);border-radius:var(--card-radius);padding:12px;border:1px solid var(--glass-border);box-shadow:var(--shadow)}
+  .map-card{padding:10px}
+  .map-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .map-area{
+    position:relative;height:520px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);
+    background:
+      linear-gradient(180deg, rgba(2,10,20,0.6), rgba(2,10,20,0.85)),
+      repeating-linear-gradient(transparent, transparent 28px, rgba(255,255,255,0.01) 28px, rgba(255,255,255,0.01) 29px);
+  }
+
+  /* simple vector "map" drawn with SVG-like shapes (CSS) */
+  .map-svg{position:absolute;inset:0;display:block}
+  .map-water{fill:#031028}
+  .map-land{fill:linear-gradient(#0b1a2b,#0d2236)}
+
+  /* marker base */
+  .marker{position:absolute;transform:translate(-50%,-100%);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .marker .marker-dot{width:18px;height:18px;border-radius:999px;box-shadow:0 8px 24px rgba(0,0,0,0.6)}
+  .marker .marker-label{font-size:12px;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
+
+  /* colored marker types */
+  .dot-fire{background:linear-gradient(180deg,#ff5b4b,#ff1f1f);box-shadow:0 6px 24px rgba(255,40,40,0.16)}
+  .dot-ambulance{background:linear-gradient(180deg,#57b8ff,#1377ff);box-shadow:0 6px 24px rgba(30,120,255,0.16)}
+
+  /* pulsing halo */
+  .pulse{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:999px;pointer-events:none;
+    width:44px;height:44px;background:transparent;
+  }
+  .pulse::before,.pulse::after{
+    content:'';position:absolute;inset:0;border-radius:999px;opacity:0.9;animation:pulse 1.6s infinite;
+  }
+  .pulse.fire::before{box-shadow:0 0 28px rgba(255,60,60,0.18);border:1px solid rgba(255,60,60,0.12)}
+  .pulse.fire::after{box-shadow:0 0 80px rgba(255,60,60,0.06)}
+  .pulse.amb::before{box-shadow:0 0 28px rgba(30,140,255,0.18);border:1px solid rgba(30,140,255,0.12)}
+  .pulse.amb::after{box-shadow:0 0 80px rgba(30,140,255,0.06)}
+  @keyframes pulse{
+    0%{transform:translate(-50%,-50%) scale(0.9);opacity:0.9}
+    50%{transform:translate(-50%,-50%) scale(1.25);opacity:0.6}
+    100%{transform:translate(-50%,-50%) scale(0.9);opacity:0.92}
+  }
+
+  /* popup */
+  .popup{
+    position:absolute;min-width:220px;max-width:320px;background:linear-gradient(180deg,#061226,#04101a);
+    border-radius:10px;padding:12px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 18px 60px rgba(0,0,0,0.65);
+    z-index:50;display:none;
+  }
+  .popup h4{margin:0 0 6px;font-size:15px}
+  .popup p{margin:0 0 10px;color:var(--muted);font-size:13px}
+  .popup .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
+  .popup .row{display:flex;gap:8px;justify-content:flex-end}
+
+  /* ===========================
+     Right column: controls
+     =========================== */
+  .side{display:flex;flex-direction:column;gap:12px}
+  .sos-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px}
+  .sos-btn{
+    width:150px;height:150px;border-radius:999px;display:grid;place-items:center;font-size:40px;font-weight:800;
+    background:linear-gradient(180deg,var(--danger),#c92b2b);color:white;border:6px solid rgba(255,255,255,0.06);box-shadow:0 20px 80px rgba(255,59,48,0.12);cursor:pointer;
+  }
+  .sos-note{font-size:13px;color:var(--muted);text-align:center}
+
+  .list{display:flex;flex-direction:column;gap:8px}
+  .list .item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.02)}
+  .meta{font-size:13px;color:var(--muted)}
+
+  .vehicles{display:flex;gap:10px;align-items:center;justify-content:space-between}
+  .legend{display:flex;gap:12px;align-items:center;margin-top:10px}
+  .legend .dot{width:14px;height:14px;border-radius:999px;display:inline-block;box-shadow:0 6px 22px rgba(0,0,0,0.45)}
+
+  .legend .dot.fire{background:linear-gradient(180deg,#ff5b4b,#ff1f1f)}
+  .legend .dot.amb{background:linear-gradient(180deg,#57b8ff,#1377ff)}
+
+  /* modal */
+  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;z-index:80}
+  .modal{width:560px;max-width:95%;border-radius:12px;padding:14px;background:linear-gradient(180deg,#061226,#04101b);border:1px solid rgba(255,255,255,0.04)}
+
+  /* footer */
+  footer{text-align:center;color:var(--muted);margin-top:20px;font-size:13px}
+
+  /* small screens */
+  @media (max-width:640px){
+    .logo{width:48px;height:48px}
+    .title h1{font-size:16px}
+    .map-area{height:320px}
+    .sos-btn{width:120px;height:120px;font-size:32px}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand" aria-hidden="false">
+        <div class="logo" aria-hidden="true">
+          <!-- simple shield icon -->
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2L3 5v6c0 5 3.8 9.9 9 11 5.2-1.1 9-6 9-11V5l-9-3z" fill="white" opacity="0.12"/><path d="M12 4.2l6.5 2.2v4.6c0 4.3-3.2 8.5-6.5 9.6-3.3-1.1-6.5-5.3-6.5-9.6V6.4L12 4.2z" stroke="white" stroke-opacity="0.12" stroke-width="0.6"/></svg>
+        </div>
+        <div class="title">
+          <h1>SDRS — Smart Disaster Response</h1>
+          <p>Futuristic prototype • Real-time relay & coordination</p>
+        </div>
+      </div>
+
+      <div class="top-controls" role="navigation" aria-label="top actions">
+        <div class="chip">LIVE</div>
+        <button class="btn">Overview</button>
+        <button class="btn">Resources</button>
+        <button class="btn primary" id="connectNgo">Connect NGO</button>
+      </div>
+    </header>
+
+    <main class="main" role="main">
+
+      <!-- LEFT: MAP + DETAILS -->
+      <section class="map-card card" aria-label="Operations map">
+        <div class="map-head">
+          <div>
+            <strong style="font-size:16px">Real-time Operations Map</strong><br>
+            <small style="color:var(--muted)">Interactive markers — red = fire brigade, blue = ambulance</small>
+          </div>
+          <div style="color:var(--muted)">Updated: <span id="lastUpdated">just now</span></div>
+        </div>
+
+        <div class="map-area" id="mapArea" aria-hidden="false">
+          <!-- Vector-like background made with SVG for self-contained look -->
+          <svg class="map-svg" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#04102a" />
+                <stop offset="100%" stop-color="#0b1b33" />
+              </linearGradient>
+            </defs>
+            <rect width="1000" height="600" fill="#03102a"/>
+            <!-- stylized land masses -->
+            <path d="M40 420 Q180 320 300 380 T700 300 Q820 260 940 360 L940 580 L40 580 Z" fill="#083b52" opacity="0.6"/>
+            <path d="M120 260 Q220 140 360 160 T700 120 Q820 100 920 160 L920 260 Q780 240 640 280 T120 260 Z" fill="#0b2740" opacity="0.55"/>
+            <!-- minor roads -->
+            <g stroke="#112233" stroke-width="2" fill="none" opacity="0.5">
+              <path d="M80 500 C160 460 260 480 360 440 460 400 560 420 660 380 760 340 860 360 940 340"/>
+              <path d="M120 240 C200 220 300 240 400 220 500 200 600 230 720 210 820 190 920 200"/>
+            </g>
+            <!-- grid for style -->
+            <g stroke="rgba(255,255,255,0.02)" stroke-width="1">
+              <path d="M0 50 H1000 M0 100 H1000 M0 150 H1000 M0 200 H1000 M0 250 H1000 M0 300 H1000 M0 350 H1000 M0 400 H1000 M0 450 H1000 M0 500 H1000 M0 550 H1000"/>
+            </g>
+          </svg>
+
+          <!-- MARKERS (absolute positions via percent) -->
+          <!-- Fire brigade (red) -->
+          <div class="marker" data-type="fire" data-id="fire1" style="left:26%; top:62%;" tabindex="0" aria-label="Fire brigade - Station 3">
+            <div class="marker-dot dot-fire" title="Fire Station 3"></div>
+            <div class="marker-label">Fire Station 3</div>
+            <div class="pulse fire" aria-hidden="true"></div>
+          </div>
+
+          <div class="marker" data-type="fire" data-id="fire2" style="left:74%; top:28%;" tabindex="0" aria-label="Fire brigade - Station 1">
+            <div class="marker-dot dot-fire" title="Fire Station 1"></div>
+            <div class="marker-label">Fire Station 1</div>
+            <div class="pulse fire" aria-hidden="true"></div>
+          </div>
+
+          <!-- Ambulances (blue) -->
+          <div class="marker" data-type="ambulance" data-id="amb1" style="left:44%; top:50%;" tabindex="0" aria-label="Ambulance - Unit A">
+            <div class="marker-dot dot-ambulance" title="Ambulance Unit A"></div>
+            <div class="marker-label">Ambulance Unit A</div>
+            <div class="pulse amb" aria-hidden="true"></div>
+          </div>
+
+          <div class="marker" data-type="ambulance" data-id="amb2" style="left:58%; top:70%;" tabindex="0" aria-label="Ambulance - Unit B">
+            <div class="marker-dot dot-ambulance" title="Ambulance Unit B"></div>
+            <div class="marker-label">Ambulance Unit B</div>
+            <div class="pulse amb" aria-hidden="true"></div>
+          </div>
+
+          <!-- Hospital marker (neutral) -->
+          <div class="marker" data-type="hospital" data-id="h1" style="left:18%; top:30%;" tabindex="0" aria-label="City Trauma Center">
+            <div class="marker-dot" style="background:linear-gradient(180deg,#9df3e2,#54d6c6);width:16px;height:16px"></div>
+            <div class="marker-label">City Trauma Ctr</div>
+          </div>
+
+          <!-- Popup container -->
+          <div class="popup" id="popup" role="dialog" aria-hidden="true">
+            <h4 id="popup-title">Title</h4>
+            <p id="popup-desc">Details</p>
+            <div class="meta" id="popup-meta">Meta</div>
+            <div class="row">
+              <button class="btn" id="popup-call">Call</button>
+              <button class="btn primary" id="popup-alert">Send Alert</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Legend + quick stats -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="legend">
+              <div><span class="dot fire" aria-hidden="true"></span> Fire brigade</div>
+              <div><span class="dot amb" aria-hidden="true"></span> Ambulance</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;align-items:center">
+            <div style="text-align:right">
+              <div style="font-weight:700">Active reports</div>
+              <div class="meta">24 in last 12h</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-weight:700">Avg response</div>
+              <div class="meta">~14 mins</div>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- RIGHT: SOS + NGOs + Actions -->
+      <aside class="side">
+
+        <div class="card sos-wrap" role="region" aria-labelledby="sosTitle">
+          <div id="sosTitle" style="font-weight:800">🚨 SOS</div>
+          <div class="sos-btn" id="sosBtn" role="button" aria-pressed="false" tabindex="0">SOS</div>
+          <div class="sos-note">Tap SOS to open the emergency confirmation panel. This prototype simulates sending alerts to authorities & NGOs.</div>
+
+          <div style="width:100%;margin-top:8px">
+            <label style="font-size:13px;color:var(--muted)">Selected NGO</label>
+            <input id="selectedNgo" style="width:100%;margin-top:6px;padding:10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:inherit" readonly placeholder="No NGO selected" />
+
+            <label style="font-size:13px;color:var(--muted);margin-top:8px">Message (editable)</label>
+            <textarea id="sosMessage" rows="4" style="width:100%;margin-top:6px;padding:10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:inherit">I need immediate assistance. Location: [auto]. Type: Medical/Fire/Rescue.</textarea>
+
+            <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+              <button class="btn" id="previewBtn">Preview</button>
+              <button class="btn primary" id="triggerBtn">Trigger</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <strong>Partner NGOs</strong>
+          <div class="list" style="margin-top:10px">
+            <div class="item" data-phone="+919876543210" data-msg="Flood at Sector 7. Immediate evacuation needed.">
+              <div>
+                <div style="font-weight:700">ReliefWave — Mumbai</div>
+                <div class="meta">Evacuation & Shelter • +91-98765-43210</div>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn" onclick="selectNgo(this)">Select</button>
+              </div>
+            </div>
+
+            <div class="item" data-phone="+919123455678" data-msg="Medical assistance required at coordinates.">
+              <div>
+                <div style="font-weight:700">CareConnect — Kolkata</div>
+                <div class="meta">Medical Support • +91-91234-55678</div>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn" onclick="selectNgo(this)">Select</button>
+              </div>
+            </div>
+
+            <div class="item" data-phone="+919988776655" data-msg="Rescue support required.">
+              <div>
+                <div style="font-weight:700">Harit Sahay — Kerala</div>
+                <div class="meta">Rescue • +91-99887-66554</div>
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn" onclick="selectNgo(this)">Select</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <strong>Quick Actions</strong>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+            <button class="btn" onclick="simulateSiren()">Trigger Area Siren</button>
+            <button class="btn" onclick="shareLink()">Share Live Link</button>
+            <button class="btn" onclick="exportReport()">Export Report (PDF)</button>
+          </div>
+        </div>
+
+      </aside>
+    </main>
+
+    <footer>
+      SDRS Prototype — Futuristic UI • © <span id="year"></span>
+    </footer>
+  </div>
+
+  <!-- confirmation modal -->
+  <div class="backdrop" id="backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true">
+      <h3>Confirm SOS</h3>
+      <p style="color:var(--muted)">Review recipients & message. This prototype only simulates sending alerts.</p>
+
+      <div style="margin-top:10px">
+        <label style="font-size:13px;color:var(--muted)">Recipients</label>
+        <input id="recipients" class="input" style="width:100%;padding:10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:inherit" />
+      </div>
+
+      <div style="margin-top:8px">
+        <label style="font-size:13px;color:var(--muted)">Message</label>
+        <textarea id="modalMessage" rows="4" style="width:100%;padding:10px;border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.03);color:inherit"></textarea>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn primary" onclick="confirmSend()">Confirm & Send</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  // ===========================
+  // Small interactive behaviors
+  // ===========================
+  document.getElementById('year').textContent = new Date().getFullYear();
+  document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+
+  // Data (prototype)
+  const DB = {
+    hospitals:{
+      h1:{name:'City Trauma Center',phone:'+911234567890',info:'ICU • 1.2 km'},
+    },
+    ngos:{
+      n1:{name:'ReliefWave (Mumbai)',phone:'+919876543210',msg:'Flood at Sector 7. Immediate evacuation needed.'},
+      n2:{name:'CareConnect (Kolkata)',phone:'+919123455678',msg:'Medical assistance required at coordinates.'},
+      n3:{name:'Harit Sahay (Kerala)',phone:'+919988776655',msg:'Rescue support required.'}
+    },
+    units:{
+      fire1:{name:'Fire Station 3',phone:'+911112223334'},
+      fire2:{name:'Fire Station 1',phone:'+911112223335'},
+      amb1:{name:'Ambulance Unit A',phone:'+911112223336'},
+    }
+  };
+
+  // Popup handling
+  const popup = document.getElementById('popup');
+  const popupTitle = document.getElementById('popup-title');
+  const popupDesc = document.getElementById('popup-desc');
+  const popupMeta = document.getElementById('popup-meta');
+  const popupCall = document.getElementById('popup-call');
+  const popupAlert = document.getElementById('popup-alert');
+
+  document.querySelectorAll('.marker').forEach(m=>{
+    m.addEventListener('click', ()=> openPopup(m));
+    m.addEventListener('keydown', (e)=>{ if(e.key==='Enter' || e.key===' ') openPopup(m); });
+  });
+
+  function openPopup(marker){
+    const rect = marker.getBoundingClientRect();
+    const mapRect = document.getElementById('mapArea').getBoundingClientRect();
+    const left = rect.left - mapRect.left + rect.width/2;
+    const top = rect.top - mapRect.top - 8;
+
+    // choose content by type/id
+    const type = marker.dataset.type;
+    const id = marker.dataset.id;
+    let title='Location', desc='Details not available', meta='';
+
+    if(type==='fire'){
+      title = DB.units[id]?.name || 'Fire Unit';
+      desc = 'Fire brigade station — quick response team';
+      meta = 'Contact: ' + (DB.units[id]?.phone || 'N/A');
+    } else if(type==='ambulance'){
+      title = DB.units[id]?.name || 'Ambulance';
+      desc = 'Medical emergency unit — ambulance available';
+      meta = 'Contact: ' + (DB.units[id]?.phone || 'N/A');
+    } else if(type==='hospital'){
+      title = DB.hospitals[id]?.name || 'Hospital';
+      desc = DB.hospitals[id]?.info || 'Hospital info';
+      meta = 'Contact: ' + (DB.hospitals[id]?.phone || 'N/A');
+    } else if(type==='ngo'){
+      title = DB.ngos[id]?.name || 'NGO';
+      desc = DB.ngos[id]?.msg || 'NGO support';
+      meta = 'Contact: ' + (DB.ngos[id]?.phone || 'N/A');
+    }
+
+    popupTitle.textContent = title;
+    popupDesc.textContent = desc;
+    popupMeta.textContent = meta;
+
+    // position popup (prevent overflow)
+    popup.style.left = Math.min(Math.max(left, 12), mapRect.width - 340) + 'px';
+    popup.style.top = Math.max(top - 90, 12) + 'px';
+    popup.style.display = 'block';
+    popup.setAttribute('aria-hidden','false');
+
+    // Call button
+    popupCall.onclick = ()=> {
+      // in a real app use tel: link; here we simulate
+      alert('Calling ' + meta);
+    };
+    popupAlert.onclick = ()=> {
+      alert('Alert sent to responders for ' + title + '\\n(Prototype simulation)');
+    };
+  }
+
+  // Close popup on outside click
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.marker') && !e.target.closest('#popup')) {
+      popup.style.display = 'none';
+      popup.setAttribute('aria-hidden','true');
+    }
+  });
+
+  // Select NGO
+  function selectNgo(btn){
+    const item = btn.closest('.item');
+    const phone = item.dataset.phone;
+    const msg = item.dataset.msg;
+    const name = item.querySelector('div > div').textContent;
+    document.getElementById('selectedNgo').value = name + ' • ' + phone;
+    document.getElementById('sosMessage').value = msg + ' Location: [auto].';
+  }
+
+  // SOS modal
+  const backdrop = document.getElementById('backdrop');
+  const sosBtn = document.getElementById('sosBtn');
+  const triggerBtn = document.getElementById('triggerBtn');
+  const previewBtn = document.getElementById('previewBtn');
+
+  function openModal(){
+    document.getElementById('recipients').value = document.getElementById('selectedNgo').value || 'Local Authorities, Nearby NGOs';
+    document.getElementById('modalMessage').value = document.getElementById('sosMessage').value;
+    backdrop.style.display = 'flex';
+    backdrop.setAttribute('aria-hidden','false');
+  }
+  function closeModal(){ backdrop.style.display = 'none'; backdrop.setAttribute('aria-hidden','true'); }
+
+  sosBtn.addEventListener('click', openModal);
+  sosBtn.addEventListener('keydown', e=>{ if(e.key==='Enter' || e.key===' ') openModal(); });
+  triggerBtn.addEventListener('click', openModal);
+  previewBtn.addEventListener('click', ()=> alert('Preview:\\n' + document.getElementById('sosMessage').value));
+
+  function confirmSend(){
+    const rec = document.getElementById('recipients').value;
+    const msg = document.getElementById('modalMessage').value;
+    alert('SOS Sent (simulated)\\nRecipients: ' + rec + '\\nMessage: ' + msg + '\\nLive location included.');
+    closeModal();
+    document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+  }
+
+  // Quick actions
+  function simulateSiren(){ alert('Area siren triggered (simulation)'); }
+  function shareLink(){ navigator.clipboard?.writeText(location.href).then(()=>alert('Live link copied to clipboard')); }
+  function exportReport(){ alert('Exporting report as PDF (simulated)'); }
+
+  // Accessibility: close modal on ESC
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ closeModal(); popup.style.display='none'; }});
+</script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futuristic Disaster Management System</title>
+
+<style>
+/* ---------------- GLOBAL STYLE ---------------- */
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #0b0f1a;
+    color: white;
+}
+
+header {
+    background: linear-gradient(to right, #d00000, #ff3b3b);
+    padding: 20px;
+    text-align: center;
+    font-size: 28px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    box-shadow: 0 0 20px red;
+}
+
+.container {
+    width: 90%;
+    margin: auto;
+    padding: 20px;
+}
+
+/* ---------------- SECTION CARD ---------------- */
+.card {
+    background: rgba(255,255,255,0.06);
+    padding: 20px;
+    margin: 20px 0;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(10px);
+    transition: 0.3s;
+}
+
+.card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
+
+/* ---------------- HEADING ---------------- */
+h2 {
+    border-left: 5px solid #ff4747;
+    padding-left: 10px;
+    font-size: 26px;
+}
+
+/* ---------------- DISASTER BLOCK ---------------- */
+.disaster {
+    background: rgba(255,0,0,0.15);
+    padding: 15px;
+    margin: 15px 0;
+    border-left: 6px solid #ff2e2e;
+    border-radius: 10px;
+}
+
+.disaster h3 {
+    color: #ff5b5b;
+    margin-bottom: 8px;
+}
+
+/* ---------------- MAP SECTION ---------------- */
+.map-box {
+    height: 300px;
+    width: 100%;
+    border-radius: 16px;
+    background: url('https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/BlankMap-World-v2.png/1280px-BlankMap-World-v2.png') center/cover;
+    border: 2px solid #444;
+    position: relative;
+    box-shadow: 0 0 25px rgba(0,150,255,0.3);
+}
+
+/* Animated dots */
+.dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    position: absolute;
+    animation: blink 1s infinite;
+}
+
+.red-dot {
+    background: red;
+    box-shadow: 0 0 12px red;
+}
+
+.blue-dot {
+    background: #00a6ff;
+    box-shadow: 0 0 12px #00a6ff;
+}
+
+@keyframes blink {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---------------- SOS BUTTON ---------------- */
+.sos-btn {
+    width: 100%;
+    padding: 18px;
+    font-size: 26px;
+    margin-top: 15px;
+    background: red;
+    border: none;
+    color: white;
+    font-weight: bold;
+    border-radius: 16px;
+    cursor: pointer;
+    box-shadow: 0 0 25px red;
+    transition: 0.2s;
+}
+
+.sos-btn:hover {
+    background: #ff4d4d;
+    box-shadow: 0 0 35px #ff4d4d;
+}
+
+/* ---------------- LIST ---------------- */
+ul {
+    margin-left: 18px;
+}
+
+li {
+    margin: 5px 0;
+    line-height: 1.4;
+}
+</style>
+</head>
+
+<body>
+
+<header>🚨 FUTURISTIC DISASTER MANAGEMENT SYSTEM</header>
+
+<div class="container">
+
+    <!-- MAP SECTION -->
+    <div class="card">
+        <h2>📍 Live Location Map</h2>
+        <div class="map-box">
+            <!-- Dots -->
+            <div class="dot red-dot" style="top: 120px; left: 200px;"></div>
+            <div class="dot blue-dot" style="top: 200px; left: 350px;"></div>
+        </div>
+        <p><strong>Red Dot = Fire Brigade</strong> | <strong>Blue Dot = Ambulance</strong></p>
+        <button class="sos-btn">⚠️ SEND SOS ALERT</button>
+    </div>
+
+    <!-- DISASTER TYPES -->
+    <div class="card">
+        <h2>🌪 Types of Disasters & Escaping Techniques</h2>
+
+        <!-- Earthquake -->
+        <div class="disaster">
+            <h3>1. Earthquake</h3>
+            <p><strong>Escaping Techniques:</strong></p>
+            <ul>
+                <li>Drop, Cover and Hold under strong furniture.</li>
+                <li>Stay away from windows, glass and heavy objects.</li>
+                <li>Do not use lifts during or after an earthquake.</li>
+                <li>Move to an open ground after shaking stops.</li>
+            </ul>
+        </div>
+
+        <!-- Flood -->
+        <div class="disaster">
+            <h3>2. Flood</h3>
+            <p><strong>Escaping Techniques:</strong></p>
+            <ul>
+                <li>Avoid walking or driving through floodwater.</li>
+                <li>Move valuables to higher floors.</li>
+                <li>Turn off electrical appliances immediately.</li>
+                <li>Evacuate early when warnings are issued.</li>
+            </ul>
+        </div>
+
+        <!-- Fire -->
+        <div class="disaster">
+            <h3>3. Fire Accident</h3>
+            <p><strong>Escaping Techniques:</strong></p>
+            <ul>
+                <li>Crawl low under smoke to avoid inhalation.</li>
+                <li>Use fire exit routes, never elevators.</li>
+                <li>Stop, Drop, and Roll if clothes catch fire.</li>
+                <li>Use fire extinguishers if trained.</li>
+            </ul>
+        </div>
+    </div>
+<style>
+.sos-btn {
+    width: 100%;
+    padding: 18px;
+    font-size: 24px;
+    background: red;
+    border: none;
+    color: white;
+    border-radius: 14px;
+    cursor: pointer;
+    margin-top: 20px;
+    font-weight: bold;
+    box-shadow: 0 0 25px red;
+}
+.sos-btn:hover {
+    background: #ff4d4d;
+    box-shadow: 0 0 35px #ff4d4d;
+}
+</style>
+
